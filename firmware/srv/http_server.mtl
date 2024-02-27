@@ -303,7 +303,7 @@ fun cbhttp req=
             http_header HTTP_204 nil
         )
         else if !strcmp page "say" then (
-            if !gSleepState then (audiolib_start_http (strcatlist "http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&tl=de-de&q="::(strreplace (Sgetargvalue args 't') " " "+")::nil) #_cbWavError);
+            if !gSleepState then (audiolib_start_http (strcatlist "http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&tl="::config_get_lang::"&q="::(strreplace (Sgetargvalue args 't') " " "+")::nil) #_cbWavError);
             http_header HTTP_204 nil
         )
         else if !strcmp page "taichi" then let Igetargvalue args 'v' -> v in (  // taichi
