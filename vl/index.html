@@ -437,7 +437,7 @@ input, select, textarea {
             <input class="button" type="submit" value="Set">
         </div>
         <div class="column">
-            <label for="dstField">Daylight Saving Time</label>
+            <label for="dstField">Daylight Saving Time <span id="dstAutoLabel" style="font-size:0.8em;color:#888"></span></label>
             <select name="d" id="dstField">
             <option value="0">Off</option>
             <option value="1">On</option>
@@ -520,6 +520,13 @@ async function onLoad() {
     document.querySelector('#langField').value = status.language;
     document.querySelector('#taichiField').value = status.taichi_freq;
     document.querySelector('#dstField').value = status.time.dst;
+    // For timezones with automatic DST detection, show status and disable manual override
+    if (status.time.dst_auto) {
+        const autoLabel = document.getElementById("dstAutoLabel");
+        autoLabel.textContent = status.time.dst ? "(auto: active)" : "(auto: inactive)";
+        document.querySelector('#dstField').disabled = true;
+        document.querySelector('#dstField').title = "DST is automatically managed for this timezone.";
+    }
 
     document.getElementById("latitudeField").value = status.latitude;
     document.getElementById("longitudeField").value = status.longitude;

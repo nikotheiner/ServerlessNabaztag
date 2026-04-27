@@ -14,18 +14,125 @@ const MONTHS = {"Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov
 
 var time_local = [0 0 0 0 0 0 0] ;; // [year, month, day, hour, minute, second, days_since_epoc]
 var time_utc = [0 0 0 0 0 0 0] ;; // [year, month, day, hour, minute, second, days_since_epoc]
+var time_dst_offset = 0 ;; // Effective DST offset in minutes (auto-computed each tick)
 
 /**
- * Get Daylight Saving Time offset (in minutes)
+ * Get the number of days in a given month
  */
-fun _time_dst_offset=
-    if (config_get_dst == 1) then 60 else 0;;
+fun _time_last_day_of_month year month=
+    if month == 2 then
+        if ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0) then 29 else 28
+    else if (month == 4) || (month == 6) || (month == 9) || (month == 11) then 30
+    else 31;;
 
 /**
- * Get the time offset (in minutes) from UTC
+ * Get the day-of-month of the last Sunday in the given month.
+ * Uses the current utc_day and days_since_epoch (0=Sun per WEEKDAYS) to derive
+ * the day of week of the last day of the month.
+ */
+fun _time_last_sunday_of_month year month utc_day days_since_epoch=
+    let _time_last_day_of_month year month -> last_day in
+    let (days_since_epoch + 1) % 7 -> current_dow in  // 0=Sun, 1=Mon, … 6=Sat
+    let (current_dow + (last_day - utc_day)) % 7 -> last_day_dow in
+    last_day - last_day_dow;;
+
+/**
+ * Return 1 if EU DST is in effect for the given UTC date/time, 0 otherwise.
+ * EU: clocks go forward on the last Sunday of March at 01:00 UTC,
+ *     and back on the last Sunday of October at 01:00 UTC.
+ */
+fun _time_is_eu_dst year month day hour days_since_epoch=
+    if (month < 3) || (month > 10) then 0
+    else if (month > 3) && (month < 10) then 1
+    else
+        let _time_last_sunday_of_month year month day days_since_epoch -> last_sun in
+        if month == 3 then
+            if day > last_sun then 1
+            else if (day == last_sun) && (hour >= 1) then 1
+            else 0
+        else  // month == 10
+            if day > last_sun then 0
+            else if (day == last_sun) && (hour >= 1) then 0
+            else 1;;
+
+/**
+ * Return 1 if US/CA DST is in effect for the given UTC date/time, 0 otherwise.
+ * US: clocks go forward on the 2nd Sunday of March at 02:00 local
+ *     and back on the 1st Sunday of November at 02:00 local.
+ * UTC approximation: use hour >= 7 for both boundaries (UTC-5 eastern midpoint).
+ */
+fun _time_is_us_dst year month day hour days_since_epoch=
+    if (month < 3) || (month > 11) then 0
+    else if (month > 3) && (month < 11) then 1
+    else
+        let (days_since_epoch + 1) % 7 -> current_dow in  // 0=Sun
+        let (current_dow - (day - 1) + 700) % 7 -> month1_dow in  // day-of-week of the 1st
+        if month == 3 then
+            let 1 + (7 - month1_dow) % 7 -> first_sun in
+            let first_sun + 7 -> second_sun in
+            if day > second_sun then 1
+            else if (day == second_sun) && (hour >= 7) then 1
+            else 0
+        else  // month == 11
+            let 1 + (7 - month1_dow) % 7 -> first_sun in
+            if day > first_sun then 0
+            else if (day == first_sun) && (hour >= 7) then 0
+            else 1;;
+
+/**
+ * Return 1 if Southern-Hemisphere (AU/NZ) DST is in effect for the given UTC date/time.
+ * AU: clocks go forward on the 1st Sunday of October at 02:00 local (≈16:00 UTC)
+ *     and back on the 1st Sunday of April at 03:00 local (≈16:00 UTC).
+ */
+fun _time_is_au_dst year month day hour days_since_epoch=
+    if (month > 10) || (month < 4) then 1
+    else if (month > 4) && (month < 10) then 0
+    else
+        let (days_since_epoch + 1) % 7 -> current_dow in
+        let (current_dow - (day - 1) + 700) % 7 -> month1_dow in
+        let 1 + (7 - month1_dow) % 7 -> first_sun in
+        if month == 10 then
+            if day > first_sun then 1
+            else if (day == first_sun) && (hour >= 16) then 1
+            else 0
+        else  // month == 4
+            if day > first_sun then 0
+            else if (day == first_sun) && (hour >= 16) then 0
+            else 1;;
+
+/**
+ * Compute the DST offset (0 or 60 minutes) based on the timezone DST rule and
+ * the current UTC date/time.  Falls back to the manual config_get_dst setting
+ * for timezones with DST_NONE.
+ */
+fun _time_compute_dst_offset dst_rule year month day hour days_since_epoch=
+    if dst_rule == DST_EU then
+        if _time_is_eu_dst year month day hour days_since_epoch then 60 else 0
+    else if dst_rule == DST_US then
+        if _time_is_us_dst year month day hour days_since_epoch then 60 else 0
+    else if dst_rule == DST_AU then
+        if _time_is_au_dst year month day hour days_since_epoch then 60 else 0
+    else
+        // DST_NONE – honour the manual toggle from config
+        if (config_get_dst == 1) then 60 else 0;;
+
+/**
+ * Get the effective time offset (timezone base + auto DST) in minutes.
  */
 fun time_offset=
-    _time_dst_offset + get_offset_from_city_code config_get_city_code;;
+    (get_offset_from_city_code config_get_city_code) + time_dst_offset;;
+
+/**
+ * Return 1 if DST is currently active, 0 otherwise.
+ */
+fun time_is_dst=
+    if time_dst_offset > 0 then 1 else 0;;
+
+/**
+ * Return 1 if the current timezone uses automatic DST detection, 0 if manual.
+ */
+fun time_is_dst_auto=
+    if (get_dst_rule_from_city_code config_get_city_code) != DST_NONE then 1 else 0;;
 
 fun time_is_valid=
     time_high !=0 || time_low != 0;;
@@ -60,12 +167,23 @@ fun _time_calculate_datetime offset=
         ];;
 
 /**
- * Update the current year, month, day, housrs, minutes, seconds
+ * Update the current year, month, day, hours, minutes, seconds.
+ * UTC time is computed first so that the DST rule can be evaluated against UTC,
+ * then local time is derived with the correct total offset.
  */
 fun _time_calculate=
-    set time_local = _time_calculate_datetime time_offset;
+    // 1. Compute UTC time (no offset, no DST)
     set time_utc = _time_calculate_datetime 0;
-    0;;
+    // 2. Auto-detect DST from the UTC date/time, then compute local time
+    let time_utc -> [utc_year utc_month utc_day utc_hour _ _ days_since_epoch] in
+    let get_dst_rule_from_city_code config_get_city_code -> dst_rule in
+    let get_offset_from_city_code config_get_city_code -> tz_offset in
+    let _time_compute_dst_offset dst_rule utc_year utc_month utc_day utc_hour days_since_epoch -> dst_val in
+    (
+        set time_dst_offset = dst_val;
+        set time_local = _time_calculate_datetime (tz_offset + dst_val);
+        0
+    );;
 
 /**
  * Update the time of day
@@ -131,7 +249,11 @@ fun time_json=
         "{\n"::
             (json_int "time" time) :: ",\n" ::
             (json_str "ts" time_local_human) :: ",\n" ::
-            (json_int "dst" config_get_dst) :: ",\n" ::
+            (json_str "time_local" time_date_local) :: ",\n" ::
+            (json_str "time_utc" time_date_utc) :: ",\n" ::
+            (json_int "dst" time_is_dst) :: ",\n" ::
+            (json_int "dst_auto" time_is_dst_auto) :: ",\n" ::
+            (json_int "dst_offset" time_dst_offset) :: ",\n" ::
             (json_int "offset" time_offset) :: ",\n" ::
             (json_str "city_code" config_get_city_code) :: ",\n" ::
             (json_str "time_server" ntp_server) :: "\n" ::

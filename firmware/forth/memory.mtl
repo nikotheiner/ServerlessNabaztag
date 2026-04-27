@@ -141,7 +141,7 @@ fun _forth_memory_get_special f addr=
     else if addr == FORTH_MEMORY_CITY_CODE then
         [str:config_get_city_code]
     else if addr == FORTH_MEMORY_DST then
-        [int:if config_get_dst then FORTH_TRUE else FORTH_FALSE]
+        [int:if time_is_dst then FORTH_TRUE else FORTH_FALSE]
     else if addr == FORTH_MEMORY_LATITUDE then
         [str:config_get_latitude]
     else if addr == FORTH_MEMORY_LONGITUDE then

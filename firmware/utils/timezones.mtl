@@ -4,70 +4,77 @@
 // Timezones
 //--------------------------------------------------------------------------------------------------
 
+// DST region codes (4th field in each timezone entry)
+const DST_NONE = 0 ;;   // No daylight saving time
+const DST_EU   = 1 ;;   // EU rules: last Sun of March 01:00 UTC → last Sun of October 01:00 UTC
+const DST_US   = 2 ;;   // US/CA rules: 2nd Sun of March 02:00 → 1st Sun of November 02:00 (local)
+const DST_AU   = 3 ;;   // AU/NZ rules: 1st Sun of October → 1st Sun of April (southern hemisphere)
+
 const TIMEZONES = {
-    ["UTC"  "UTC"                       0]
-    ["LIS"  "Lisbon"                    0]
-    ["LON"  "London"                    0]
-    ["MAD"  "Madrid"                   60]   // +1
-    ["PAR"  "Paris"                    60]
-    ["ROM"  "Rome"                     60]
-    ["BER"  "Berlin"                   60]
-    ["STO"  "Stockholm"                60]
-    ["ATH"  "Athens"                  120]   // +2
-    ["CAI"  "Cairo"                   120]
-    ["JRS"  "Jerusalem"               120]
-    ["MOW"  "Moscow"                  180]   // +3
-    ["JED"  "Jeddah"                  180]
-    ["THR"  "Tehran"                  210]   // +3.5
-    ["DXB"  "Dubai"                   240]   // +4
-    ["KBL"  "Kabul"                   270]   // +4.5
-    ["KHI"  "Karachi"                 300]   // +5
-    ["DEL"  "Delhi"                   330]   // +5.5
-    ["KTM"  "Kathmandu"               345]   // +5.75
-    ["DAC"  "Dhaka"                   360]   // +6
-    ["RNG"  "Rangoon"                 390]   // +6.5
-    ["BKK"  "Bangkok"                 420]   // +7
-    ["SIN"  "Singapore"               480]   // +8
-    ["HKG"  "Hong Kong"               480]
-    ["BJS"  "Beijing"                 480]
-    ["TPE"  "Taipei"                  480]
-    ["EUC"  "Eucla"                   525]   // +8.75
-    ["SEL"  "Seoul"                   540]   // +9
-    ["TYO"  "Tokyo"                   540]
-    ["ADL"  "Adelaide"                570]   // +9.5
-    ["GUM"  "Guam"                    600]   // +10
-    ["SYD"  "Sydney"                  600]
-    ["LHI"  "Lord Howe Island"        630]   // +10.5
-    ["NOU"  "Nouméa"                  660]   // +11
-    ["NSW"  "Norfolk Island"          690]   // +11.5
-    ["WLG"  "Wellington"              720]   // +12
-    ["CHA"  "Chatham Islands"         765]   // +12.75
-    ["TBU"  "Nuku'alofa"              780]   // +13
-    ["CXI"  "Kiritimati"              840]   // +14
-    ["BAR"  "Baker Island"         (-720)]   // -12
-    ["PPG"  "Pago Pago"            (-660)]   // -11
-    ["HNL"  "Honolulu"             (-600)]   // -10
-    ["MAR"  "Marquesas Islands"    (-570)]   // -9.5
-    ["ANC"  "Anchorage"            (-540)]   // -9
-    ["YVR"  "Vancouver"            (-480)]   // -8
-    ["LAX"  "Los Angeles"          (-480)]
-    ["YEA"  "Edmonton"             (-420)]   // -7
-    ["DEN"  "Denver"               (-420)]
-    ["MEX"  "Mexico City"          (-360)]   // -6
-    ["CHI"  "Chicago"              (-360)]
-    ["NYC"  "New York"             (-300)]   // -5
-    ["CCS"  "Caracas"              (-270)]   // -4.5
-    ["SCL"  "Santiago"             (-240)]   // -4
-    ["YHZ"  "Halifax"              (-240)]
-    ["SIF"  "St. John's"           (-210)]   // -3.5
-    ["RIO"  "Rio de Janeiro"       (-180)]   // -3
-    ["FEN"  "Fernando de Noronha"  (-120)]   // -2
-    ["RAI"  "Praia"                 (-60)]   // -1
+    ["UTC"  "UTC"                       0    0]   // DST_NONE
+    ["LIS"  "Lisbon"                    0    1]   // DST_EU
+    ["LON"  "London"                    0    1]   // DST_EU
+    ["MAD"  "Madrid"                   60    1]   // +1  DST_EU
+    ["PAR"  "Paris"                    60    1]   // DST_EU
+    ["ROM"  "Rome"                     60    1]   // DST_EU
+    ["BER"  "Berlin"                   60    1]   // DST_EU
+    ["STO"  "Stockholm"                60    1]   // DST_EU
+    ["ATH"  "Athens"                  120    1]   // +2  DST_EU
+    ["CAI"  "Cairo"                   120    0]   // DST_NONE
+    ["JRS"  "Jerusalem"               120    0]   // DST_NONE
+    ["MOW"  "Moscow"                  180    0]   // +3  DST_NONE
+    ["JED"  "Jeddah"                  180    0]   // DST_NONE
+    ["THR"  "Tehran"                  210    0]   // +3.5
+    ["DXB"  "Dubai"                   240    0]   // +4
+    ["KBL"  "Kabul"                   270    0]   // +4.5
+    ["KHI"  "Karachi"                 300    0]   // +5
+    ["DEL"  "Delhi"                   330    0]   // +5.5
+    ["KTM"  "Kathmandu"               345    0]   // +5.75
+    ["DAC"  "Dhaka"                   360    0]   // +6
+    ["RNG"  "Rangoon"                 390    0]   // +6.5
+    ["BKK"  "Bangkok"                 420    0]   // +7
+    ["SIN"  "Singapore"               480    0]   // +8
+    ["HKG"  "Hong Kong"               480    0]
+    ["BJS"  "Beijing"                 480    0]
+    ["TPE"  "Taipei"                  480    0]
+    ["EUC"  "Eucla"                   525    0]   // +8.75
+    ["SEL"  "Seoul"                   540    0]   // +9
+    ["TYO"  "Tokyo"                   540    0]
+    ["ADL"  "Adelaide"                570    3]   // +9.5  DST_AU
+    ["GUM"  "Guam"                    600    0]   // +10
+    ["SYD"  "Sydney"                  600    3]   // DST_AU
+    ["LHI"  "Lord Howe Island"        630    0]   // +10.5
+    ["NOU"  "Nouméa"                  660    0]   // +11
+    ["NSW"  "Norfolk Island"          690    0]   // +11.5
+    ["WLG"  "Wellington"              720    3]   // +12  DST_AU
+    ["CHA"  "Chatham Islands"         765    0]   // +12.75
+    ["TBU"  "Nuku'alofa"              780    0]   // +13
+    ["CXI"  "Kiritimati"              840    0]   // +14
+    ["BAR"  "Baker Island"         (-720)    0]   // -12
+    ["PPG"  "Pago Pago"            (-660)    0]   // -11
+    ["HNL"  "Honolulu"             (-600)    0]   // -10
+    ["MAR"  "Marquesas Islands"    (-570)    0]   // -9.5
+    ["ANC"  "Anchorage"            (-540)    2]   // -9   DST_US
+    ["YVR"  "Vancouver"            (-480)    2]   // -8   DST_US
+    ["LAX"  "Los Angeles"          (-480)    2]   // DST_US
+    ["YEA"  "Edmonton"             (-420)    2]   // -7   DST_US
+    ["DEN"  "Denver"               (-420)    2]   // DST_US
+    ["MEX"  "Mexico City"          (-360)    0]   // -6
+    ["CHI"  "Chicago"              (-360)    2]   // DST_US
+    ["NYC"  "New York"             (-300)    2]   // -5   DST_US
+    ["CCS"  "Caracas"              (-270)    0]   // -4.5
+    ["SCL"  "Santiago"             (-240)    0]   // -4
+    ["YHZ"  "Halifax"              (-240)    2]   // DST_US
+    ["SIF"  "St. John's"           (-210)    0]   // -3.5
+    ["RIO"  "Rio de Janeiro"       (-180)    0]   // -3
+    ["FEN"  "Fernando de Noronha"  (-120)    0]   // -2
+    ["RAI"  "Praia"                 (-60)    0]   // -1
 };;
 
 // Cache the last lookup
 var _timezone_last_city_code=nil;;
 var _timezone_last_offset=0;;
+var _timezone_last_dst_rule=0;;
 
 /**
  * Get the time offset (in minutes) from a city code
@@ -82,19 +89,34 @@ fun get_offset_from_city_code city_code=
         let tablen TIMEZONES -> length in
         let nil -> offset in (
             for i=0; (i<length && offset==nil); set i=i+1 do
-                let TIMEZONES.i -> [t_city_code _ t_offset] in (
+                let TIMEZONES.i -> [t_city_code _ t_offset _] in (
                     if !strcmp city_code t_city_code then set offset=t_offset
             );
             set _timezone_last_city_code = city_code;
             set _timezone_last_offset = offset;
+            set _timezone_last_dst_rule = DST_NONE;  // Reset so dst rule lookup re-searches
             if offset!=nil then offset else 0
         );;
+
+/**
+ * Get the DST rule for a city code
+ * Returns DST_NONE (0) if not found
+ */
+fun get_dst_rule_from_city_code city_code=
+    let tablen TIMEZONES -> length in
+    let nil -> rule in (
+        for i=0; (i<length && rule==nil); set i=i+1 do
+            let TIMEZONES.i -> [t_city_code _ _ t_dst_rule] in (
+                if !strcmp city_code t_city_code then set rule=t_dst_rule
+        );
+        if rule!=nil then rule else DST_NONE
+    );;
 
 /**
  * Format a timezone entry in JSON format
  */
 fun timezone_format_timezone timezone=
-    let timezone -> [code name offset] in
+    let timezone -> [code name offset _] in
         strcatlist
             "{ "::
                 (json_str "code" code) :: ", " ::
